@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
-import { TempMapView } from './TempMapView';
-import { Coordinates, Route, NavigationState } from '../../types';
-import { TempNavigationService as NavigationService } from '../../services/tempNavigation';
+import { GoogleMapsView } from './TempMapView';
+import { Coordinates, Route } from '../../types';
+import { useNavigationController } from '../../hooks/useNavigationController';
 import { GoogleMapsService } from '../../services/googleMaps';
 import { PermissionsService } from '../../utils/permissions';
 import { GOOGLE_MAPS_CONFIG, COLORS } from '../../utils/constants';
@@ -11,22 +11,26 @@ interface MapViewProps {
   destination?: Coordinates;
   onLocationChange?: (location: Coordinates) => void;
   onRouteCalculated?: (routes: Route[]) => void;
-  onNavigationStateChange?: (state: NavigationState) => void;
+  onNavigationStateChange?: () => void;
   showNavigation?: boolean;
   style?: any;
+  routes?: Route[];
+  selectedRouteIndex?: number;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
   destination,
   onLocationChange,
   onRouteCalculated,
-  onNavigationStateChange,
   showNavigation = false,
   style,
+  routes = [],
+  selectedRouteIndex = 0,
 }) => {
+  const { calculateRoute } = useNavigationController();
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
-  const [isMapReady, _setIsMapReady] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
   const locationWatchId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -90,24 +94,18 @@ export const MapView: React.FC<MapViewProps> = ({
     };
   }, [onLocationChange]);
 
-  useEffect(() => {
-    const unsubscribe = NavigationService.addListener((state) => {
-      onNavigationStateChange?.(state);
-    });
-    return unsubscribe;
-  }, [onNavigationStateChange]);
+  // Navigation state is now handled by the hook in the parent component
 
   useEffect(() => {
     const handleRouteCalculation = async () => {
       if (!currentLocation || !destination) return;
 
       try {
-        const routes = await NavigationService.calculateRoute(currentLocation, destination);
-        onRouteCalculated?.(routes);
+        const calculatedRoutes = await calculateRoute(currentLocation, destination);
+        onRouteCalculated?.(calculatedRoutes);
 
-        if (showNavigation && routes.length > 0) {
-          await NavigationService.startNavigation(destination);
-        }
+        // Navigation start is handled by the parent component
+        // The map view just calculates and displays routes
       } catch (error) {
         console.error('Route calculation error:', error);
         Alert.alert('Navigation Error', 'Unable to calculate route to destination.');
@@ -117,7 +115,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (destination && currentLocation && isMapReady) {
       handleRouteCalculation();
     }
-  }, [destination, currentLocation, isMapReady, onRouteCalculated, showNavigation]);
+  }, [destination, currentLocation, isMapReady, onRouteCalculated, showNavigation, calculateRoute]);
 
 
 
@@ -146,9 +144,27 @@ export const MapView: React.FC<MapViewProps> = ({
     );
   }
 
+  const handleMapReady = () => {
+    setIsMapReady(true);
+  };
+
+  const handleMapLocationChange = (location: Coordinates) => {
+    setCurrentLocation(location);
+    onLocationChange?.(location);
+  };
+
   return (
     <View style={[styles.container, style]}>
-      <TempMapView />
+      <GoogleMapsView
+        style={styles.map}
+        userLocation={currentLocation || undefined}
+        destination={destination}
+        routes={routes}
+        selectedRouteIndex={selectedRouteIndex}
+        showNavigation={showNavigation}
+        onMapReady={handleMapReady}
+        onLocationChange={handleMapLocationChange}
+      />
     </View>
   );
 };

@@ -1,4 +1,9 @@
-import { GoogleMapsNavigation } from '@googlemaps/react-native-navigation-sdk';
+import { 
+  TravelMode, 
+  type Waypoint, 
+  type RoutingOptions,
+  type NavigationCallbacks,
+} from '@googlemaps/react-native-navigation-sdk';
 import { Coordinates, Route, NavigationState, TransportMode } from '../types';
 import { GoogleMapsService } from './googleMaps';
 

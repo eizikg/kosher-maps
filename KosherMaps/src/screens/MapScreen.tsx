@@ -15,24 +15,26 @@ import {
   Coordinates, 
   Place, 
   Route, 
-  NavigationState, 
+ 
   TransportMode,
 } from '../types';
-import { TempNavigationService as NavigationService } from '../services/tempNavigation';
+import { useNavigationController } from '../hooks/useNavigationController';
 import { PlacesService } from '../services/places';
 import { PermissionsService } from '../utils/permissions';
 import { COLORS } from '../utils/constants';
 
 export const MapScreen: React.FC = () => {
+  const {
+    navigationState,
+    calculateRoute,
+    startNavigation,
+    stopNavigation,
+  } = useNavigationController();
+  
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [selectedDestination, setSelectedDestination] = useState<Coordinates | null>(null);
   const [availableRoutes, setAvailableRoutes] = useState<Route[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
-  const [navigationState, setNavigationState] = useState<NavigationState>({
-    isNavigating: false,
-    remainingDistance: 0,
-    remainingTime: 0,
-  });
   const [transportMode, setTransportMode] = useState<TransportMode>('driving');
   const [showRoutePreview, setShowRoutePreview] = useState(false);
 
@@ -74,13 +76,6 @@ export const MapScreen: React.FC = () => {
     }
   };
 
-  const handleNavigationStateChange = (state: NavigationState) => {
-    setNavigationState(state);
-    if (state.isNavigating) {
-      setShowRoutePreview(false);
-    }
-  };
-
   const handleRouteSelected = (routeIndex: number) => {
     setSelectedRouteIndex(routeIndex);
   };
@@ -92,7 +87,7 @@ export const MapScreen: React.FC = () => {
         return;
       }
 
-      await NavigationService.startNavigation(selectedDestination, transportMode);
+      await startNavigation(selectedDestination, transportMode);
       setShowRoutePreview(false);
     } catch (error) {
       console.error('Start navigation error:', error);
@@ -102,7 +97,7 @@ export const MapScreen: React.FC = () => {
 
   const handleStopNavigation = async () => {
     try {
-      await NavigationService.stopNavigation();
+      await stopNavigation();
       setSelectedDestination(null);
       setAvailableRoutes([]);
       setShowRoutePreview(false);
@@ -115,7 +110,7 @@ export const MapScreen: React.FC = () => {
     try {
       if (!userLocation || !selectedDestination) return;
       
-      const routes = await NavigationService.calculateRoute(
+      const routes = await calculateRoute(
         userLocation, 
         selectedDestination, 
         transportMode
@@ -136,7 +131,7 @@ export const MapScreen: React.FC = () => {
     // Recalculate routes with new transport mode
     if (userLocation && selectedDestination && !navigationState.isNavigating) {
       try {
-        const routes = await NavigationService.calculateRoute(
+        const routes = await calculateRoute(
           userLocation,
           selectedDestination,
           mode
@@ -167,8 +162,10 @@ export const MapScreen: React.FC = () => {
         destination={selectedDestination || undefined}
         onLocationChange={handleLocationChange}
         onRouteCalculated={handleRouteCalculated}
-        onNavigationStateChange={handleNavigationStateChange}
+        onNavigationStateChange={() => {}}
         showNavigation={navigationState.isNavigating}
+        routes={availableRoutes}
+        selectedRouteIndex={selectedRouteIndex}
         style={styles.map}
       />
 
