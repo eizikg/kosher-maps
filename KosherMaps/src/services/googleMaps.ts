@@ -1,4 +1,5 @@
 import Config from 'react-native-config';
+import Geolocation from '@react-native-community/geolocation';
 import { Coordinates, Address, Place, Route } from '../types';
 import { API_ENDPOINTS } from '../utils/constants';
 
@@ -201,7 +202,7 @@ export class GoogleMapsService {
 
   static async getCurrentLocation(): Promise<Coordinates> {
     return new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
+      Geolocation.getCurrentPosition(
         (position) => {
           resolve({
             latitude: position.coords.latitude,
@@ -225,7 +226,7 @@ export class GoogleMapsService {
     callback: (location: Coordinates) => void,
     errorCallback?: (error: Error) => void
   ): number {
-    return navigator.geolocation.watchPosition(
+    return Geolocation.watchPosition(
       (position) => {
         callback({
           latitude: position.coords.latitude,
@@ -245,6 +246,6 @@ export class GoogleMapsService {
   }
 
   static clearLocationWatch(watchId: number): void {
-    navigator.geolocation.clearWatch(watchId);
+    Geolocation.clearWatch(watchId);
   }
 }

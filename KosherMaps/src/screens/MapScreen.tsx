@@ -20,6 +20,7 @@ import {
 } from '../types';
 import { TempNavigationService as NavigationService } from '../services/tempNavigation';
 import { PlacesService } from '../services/places';
+import { PermissionsService } from '../utils/permissions';
 import { COLORS } from '../utils/constants';
 
 export const MapScreen: React.FC = () => {
@@ -42,6 +43,12 @@ export const MapScreen: React.FC = () => {
   const initializeServices = async () => {
     try {
       await PlacesService.initialize();
+      
+      // Check location permissions early
+      const hasPermission = await PermissionsService.checkLocationPermission();
+      if (hasPermission !== 'granted') {
+        console.log('Location permission not granted, will prompt user in MapView');
+      }
     } catch (error) {
       console.error('Services initialization error:', error);
     }

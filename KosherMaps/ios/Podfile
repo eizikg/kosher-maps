@@ -17,6 +17,11 @@ end
 target 'KosherMaps' do
   config = use_native_modules!
 
+  # Permissions setup for react-native-permissions v3.x
+  permissions_path = '../node_modules/react-native-permissions/ios'
+  pod 'Permission-LocationWhenInUse', :path => "#{permissions_path}/LocationWhenInUse"
+  pod 'Permission-LocationAlways', :path => "#{permissions_path}/LocationAlways"
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
